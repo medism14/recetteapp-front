@@ -2,7 +2,7 @@
 
 <template>
   <div class="flex flex-col items-center justify-center">
-    <div class="w-12 h-12 border-4 border-gray-200 border-t-secondary rounded-full animate-spin"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
     <p class="mt-5 text-xl text-textColor">Chargement en cours...</p>
   </div>
 </template>

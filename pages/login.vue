@@ -6,21 +6,33 @@ import FormSubmission from "~/components/ReusableComponents/FormSubmission.vue";
 import Input from "~/components/ReusableComponents/Input.vue";
 import ValidationButton from "~/components/ReusableComponents/ValidationButton.vue";
 import { useAuthStore } from "~/stores/useAuthStore";
-import { storeToRefs } from "pinia";
 import Loading from "~/components/ReusableComponents/Loading.vue";
-import { useLoadingStore } from "~/stores/useLoadingStore";
 
+// Définition des métadonnées de la page
 definePageMeta({
   layout: "auth-layout",
   middleware: "auth",
 });
 
+useSeoMeta({
+  title: "Login",
+  description: "Page d'authentification - RecetteApp",
+  ogTitle: "Login",
+  ogDescription: "Page d'authentification - RecetteApp",
+  ogImage: "/hyarotech.png",
+  twitterTitle: "Login",
+  twitterDescription: "Page d'authentification - RecetteApp",
+  twitterImage: "/hyarotech.png",
+  twitterCard: "summary",
+});
+
+// Initialisation des variables
 const router = useRouter();
 const errorMessage = ref("");
 const authStore = useAuthStore();
-const loadingStore = useLoadingStore();
-const { isLoading } = storeToRefs(loadingStore);
+const loading = ref(false);
 
+// Définition du schéma de validation
 const schema = object({
   email: string()
     .required("L'email est requis")
@@ -30,9 +42,10 @@ const schema = object({
     .min(6, "Minimum 6 caractères"),
 });
 
+// Fonction de soumission du formulaire
 const handleSubmit = async (values: object) => {
+  loading.value = true;
   try {
-    loadingStore.startLoading();
     const response = await fetch("http://localhost:3001/auth/login", {
       method: "POST",
       headers: {
@@ -61,13 +74,13 @@ const handleSubmit = async (values: object) => {
   } catch (error) {
     errorMessage.value = "Une erreur est survenue lors de la connexion";
   } finally {
-    loadingStore.stopLoading();
+    loading.value = false;
   }
 };
 </script>
 
 <template>
-  <div v-if="isLoading">
+  <div v-if="loading">
     <Loading />
   </div>
   <FormSubmission
@@ -75,7 +88,6 @@ const handleSubmit = async (values: object) => {
     name="Connexion"
     :validation-schema="schema"
     :on-submit="handleSubmit"
-    size-percentage="50"
   >
     <Input label="Email" name="email" type="email" />
     <Input

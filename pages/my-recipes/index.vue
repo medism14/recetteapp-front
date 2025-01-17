@@ -6,11 +6,13 @@ import DangerModal from "~/components/ReusableComponents/DangerModal.vue";
 import type { Recipe } from "~/types/recipe";
 import BackButton from "~/components/ReusableComponents/BackButton.vue";
 
+// Définition des métadonnées de la page, y compris le layout et le middleware pour l'authentification
 definePageMeta({
   layout: "default",
   middleware: "auth",
 });
 
+// Initialisation des variables réactives pour gérer l'état de l'application
 const router = useRouter();
 const recipes = ref<Recipe[]>([]);
 const modalAddCategoryShow = ref(false);
@@ -19,6 +21,7 @@ const modalDangerDeleteRecipeShow = ref(false);
 const categoryName = ref("");
 const categoryNameError = ref("");
 
+// Fonction de validation du nom de la catégorie, vérifiant la présence et la longueur minimale
 const validateCategoryName = () => {
   if (!categoryName.value) {
     categoryNameError.value = "Le nom de la catégorie est requis";
@@ -34,11 +37,13 @@ const validateCategoryName = () => {
   return true;
 };
 
+// Ouverture du modal pour ajouter une catégorie, avec gestion de l'état de débordement du corps
 const openModalAddCategory = () => {
   modalAddCategoryShow.value = true;
   document.body.classList.add("overflow-hidden");
 };
 
+// Fermeture du modal et réinitialisation des valeurs de catégorie
 const closeModalAddCategory = () => {
   modalAddCategoryShow.value = false;
   document.body.classList.remove("overflow-hidden");
@@ -46,18 +51,22 @@ const closeModalAddCategory = () => {
   categoryNameError.value = "";
 };
 
+// Navigation vers la page d'accueil
 const goBack = () => {
   router.push("/");
 };
 
+// Navigation vers la page d'édition d'une recette
 const handleEditRecipe = (recipeId: number) => {
   router.push(`/my-recipes/edit-recipe/${recipeId}`);
 };
 
+// Navigation vers la page de détails d'une recette
 const handleViewRecipe = (recipeId: number) => {
   router.push(`/recipe-detail/${recipeId}`);
 };
 
+// Fonction pour ajouter une catégorie, incluant la validation et la gestion des erreurs
 const handleAddCategory = async () => {
   if (!validateCategoryName()) return;
 
@@ -86,6 +95,7 @@ const handleAddCategory = async () => {
   }
 };
 
+// Fonction pour récupérer les recettes de l'utilisateur, avec gestion des erreurs
 const getMyRecipes = async () => {
   try {
     const response = await fetch("http://localhost:3001/recipes/user/recipe", {
@@ -103,8 +113,10 @@ const getMyRecipes = async () => {
   }
 };
 
+// Appel initial pour récupérer les recettes
 getMyRecipes();
 
+// Fonction pour supprimer une recette, avec mise à jour de l'état des recettes et gestion des erreurs
 const handleDeleteRecipe = async (recipeId: number) => {
   try {
     const response = await fetch(`http://localhost:3001/recipes/${recipeId}`, {
@@ -116,7 +128,7 @@ const handleDeleteRecipe = async (recipeId: number) => {
       throw new Error("Erreur lors de la suppression de la recette");
     }
 
-    // Mettre à jour la liste des recettes après la suppression
+    // Mise à jour de la liste des recettes après la suppression
     recipes.value = recipes.value.filter((recipe) => recipe.id !== recipeId);
     modalDangerDeleteRecipeShow.value = true;
     setTimeout(() => {
@@ -126,42 +138,81 @@ const handleDeleteRecipe = async (recipeId: number) => {
     console.error("Erreur:", error);
   }
 };
+
+useSeoMeta({
+  title: "Mes Recettes - RecetteApp",
+  description:
+    "Gérez vos recettes personnelles, ajoutez de nouvelles recettes et organisez vos catégories.",
+  ogTitle: "Mes Recettes - RecetteApp",
+  ogDescription:
+    "Gérez vos recettes personnelles, ajoutez de nouvelles recettes et organisez vos catégories.",
+  ogImage: "/hyarotech.png",
+  ogUrl: "https://recettes.com/my-recipes",
+  twitterTitle: "Mes Recettes - RecetteApp",
+  twitterDescription:
+    "Gérez vos recettes personnelles, ajoutez de nouvelles recettes et organisez vos catégories.",
+  twitterImage: "/hyarotech.png",
+  twitterCard: "summary",
+});
 </script>
 
 <template>
-  <div class="mb-8">
+  <div class="mb-[20px]">
+    <!-- Colonne de gauche : bouton de retour -->
     <BackButton name="Revenir à la page d'accueil" :onClick="goBack" />
   </div>
 
-  <!-- Titre -->
-  <div class="flex justify-between mb-[20px]">
-    <h1 class="text-[40px] font-bold text-textColor">Mes recettes</h1>
+  <!-- En-tête : Titre et boutons d'action -->
+  <div class="flex flex-col gap-4 sm:flex-row sm:justify-between mb-[20px]">
+    <h1
+      class="text-2xl sm:text-3xl lg:text-[40px] font-bold text-textColor text-center sm:text-left self-end"
+    >
+      Mes recettes
+    </h1>
 
-    <div class="flex gap-[10px]">
+    <div class="flex flex-col xs:flex-row gap-2 sm:gap-3">
+      <!-- Bouton pour ajouter une catégorie -->
       <button
-        class="bg-secondary flex justify-center gap-[10px] items-center p-[20px] rounded-lg h-[50px]"
+        class="bg-secondary flex justify-center items-center px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base"
         @click="openModalAddCategory"
       >
-        <p class="text-white">Ajouter une catégorie</p>
+        <span class="text-white whitespace-nowrap">Ajouter une catégorie</span>
         <Icon
           name="fa6-solid:folder-plus"
-          class="text-white text-lg font-bold"
+          class="text-white text-lg font-bold ml-2"
         />
       </button>
 
+      <!-- Bouton pour ajouter une recette -->
       <button
-        class="bg-secondary flex justify-center gap-[10px] items-center p-[20px] rounded-lg h-[50px]"
+        class="bg-secondary flex justify-center items-center px-3 py-2 sm:px-4 rounded-lg text-sm sm:text-base"
         @click="router.push('/my-recipes/add-recipe')"
       >
-        <p class="text-white">Ajouter une recette</p>
-        <Icon name="fa6-solid:plus" class="text-white text-lg font-bold" />
+        <span class="text-white whitespace-nowrap">Ajouter une recette</span>
+        <Icon name="fa6-solid:plus" class="text-white text-lg font-bold ml-2" />
       </button>
     </div>
   </div>
 
   <div class="flex flex-col gap-[35px]">
+    <!-- Section pour afficher les recettes ou un message si aucune donnée n'est disponible -->
     <template v-if="recipes.length === 0">
-      <p class="text-center text-gray-600">Aucune donnée disponible</p>
+      <!-- État de l'absence de résultats -->
+      <div
+        class="flex flex-col items-center justify-center flex-1 text-center mt-[40px]"
+      >
+        <Icon
+          name="fa6-regular:face-frown"
+          class="text-6xl text-gray-400 mb-4"
+        />
+        <h2 class="text-2xl font-semibold text-gray-600 mb-2">
+          Aucun résultat trouvé
+        </h2>
+        <p class="text-gray-500 max-w-md">
+          Vous n'avez pas de recette posté.
+        </p>
+      </div>
+      >
     </template>
     <MyRecipeInfo
       v-for="recipe in recipes"
@@ -172,7 +223,7 @@ const handleDeleteRecipe = async (recipeId: number) => {
       :handleViewRecipe="handleViewRecipe"
     />
 
-    <!-- Modal pour ajouter une categorie -->
+    <!-- Modal pour ajouter une catégorie -->
     <Transition
       enter-active-class="transition duration-300 ease-out"
       enter-from-class="transform opacity-0"
@@ -187,7 +238,7 @@ const handleDeleteRecipe = async (recipeId: number) => {
         @click="closeModalAddCategory"
       >
         <div
-          class="bg-white rounded-xl p-8 w-[500px] shadow-2xl transform transition-all"
+          class="bg-white rounded-xl p-8 w-[90%] md:w-[500px] shadow-2xl transform transition-all"
           @click.stop
         >
           <div class="flex justify-between items-center mb-6">
@@ -224,12 +275,14 @@ const handleDeleteRecipe = async (recipeId: number) => {
           </div>
 
           <div class="flex justify-end gap-4">
+            <!-- Bouton d'annulation -->
             <button
               @click="closeModalAddCategory"
               class="px-4 py-2 bg-red-500 text-gray-50 rounded-lg hover:text-gray-100 transition-colors"
             >
               Annuler
             </button>
+            <!-- Bouton pour ajouter la catégorie -->
             <button
               @click="handleAddCategory"
               class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors"

@@ -1,6 +1,7 @@
 <!-- @format -->
 
 <script setup lang="ts">
+// Importation des dépendances et des composants nécessaires
 import { object, string, number } from "yup";
 import BackButton from "~/components/ReusableComponents/BackButton.vue";
 import FormSubmission from "~/components/ReusableComponents/FormSubmission.vue";
@@ -8,12 +9,15 @@ import Input from "~/components/ReusableComponents/Input.vue";
 import ValidationButton from "~/components/ReusableComponents/ValidationButton.vue";
 import type { Category } from "~/types/category";
 import type { Recipe } from "~/types/recipe";
+import Loading from "~/components/ReusableComponents/Loading.vue";
 
+// Configuration des métadonnées de la page
 definePageMeta({
   layout: "default",
   middleware: "auth",
 });
 
+// Initialisation des variables réactives
 const router = useRouter();
 const route = useRoute();
 const recipeId = route.params.id;
@@ -23,7 +27,11 @@ const imageFile = ref<File | null>(null);
 const imageError = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
 const recipeData = ref<Recipe | null>(null);
+const loading = ref(true);
+const recipe = ref<Recipe | null>(null);
 
+// Définition du schéma de validation pour le formulaire de modification de recette
+// Utilise la bibliothèque Yup pour définir les règles de validation pour chaque champ
 const schema = object({
   name: string()
     .required("Le nom est requis")
@@ -59,6 +67,8 @@ const schema = object({
     .typeError("La catégorie doit être un nombre"),
 });
 
+// Fonction de gestion de la soumission du formulaire de modification de recette
+// Effectue la validation des données, la lecture de l'image (si présente) et l'envoi des données au serveur
 const handleSubmit = async (values: object) => {
   try {
     const recipeData: { [key: string]: any } = {
@@ -93,6 +103,7 @@ const handleSubmit = async (values: object) => {
   }
 };
 
+// Fonction pour récupérer les détails de la recette à modifier depuis le serveur
 const getRecipe = async () => {
   try {
     const response = await fetch(`http://localhost:3001/recipes/${recipeId}`, {
@@ -124,13 +135,18 @@ const getRecipe = async () => {
   } catch (error) {
     console.error("Erreur lors de la récupération de la recette:", error);
     router.push("/my-recipes");
+  } finally {
+    loading.value = false;
   }
 };
 
+// Fonction pour revenir à la page précédente
 const goBack = () => {
   router.back();
 };
 
+// Fonction de gestion du téléchargement de l'image
+// Met à jour les variables réactives imageFile et imagePreview lors de la sélection d'une image
 const handleImageUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
@@ -141,6 +157,8 @@ const handleImageUpload = (event: Event) => {
   if (imageError.value) imageError.value = "";
 };
 
+// Fonction pour effacer l'image sélectionnée
+// Réinitialise les variables réactives imagePreview, imageFile et vide l'input de fichier
 const clearImage = () => {
   imagePreview.value = "";
   imageFile.value = null;
@@ -149,12 +167,15 @@ const clearImage = () => {
   }
 };
 
+// Options pour le champ de sélection de la difficulté
 const difficultyOptions = [
   { label: "Facile", value: "EASY" },
   { label: "Moyenne", value: "MEDIUM" },
   { label: "Difficile", value: "HARD" },
 ];
 
+// Fonction pour récupérer les catégories depuis le serveur
+// Transforme les données reçues en un format adapté pour le champ de sélection des catégories
 const getCategories = async () => {
   const response = await fetch("http://localhost:3001/categories", {
     method: "GET",
@@ -172,126 +193,165 @@ const getCategories = async () => {
   }));
 };
 
+// Fonction pour déclencher l'ouverture de la boîte de dialogue de sélection de fichier
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
 
+// Appel des fonctions pour récupérer les catégories et les détails de la recette au chargement du composant
 onMounted(async () => {
-  await getCategories();
-  await getRecipe();
+  try {
+    await Promise.all([getCategories(), getRecipe()]);
+  } catch (error) {
+    console.error("Erreur lors du chargement initial:", error);
+    loading.value = false;
+  }
 });
+
+// Ajouter dans le watch de recipe.value ou dans onMounted après le chargement des données
+watch(() => recipe.value, (newRecipe) => {
+  if (newRecipe) {
+    useSeoMeta({
+      title: `Modifier ${newRecipe.name} - RecetteApp`,
+      description: `Modifiez votre recette: ${newRecipe.description}`,
+      ogTitle: `Modifier ${newRecipe.name} - RecetteApp`,
+      ogDescription: newRecipe.description,
+      ogImage: newRecipe.image,
+      ogUrl: `https://recettes.com/my-recipes/edit-recipe/${newRecipe.id}`,
+      twitterTitle: `Modifier ${newRecipe.name} - RecetteApp`,
+      twitterDescription: newRecipe.description,
+      twitterImage: newRecipe.image,
+      twitterCard: "summary",
+    });
+  }
+}, { immediate: true });
 </script>
 
 <template>
-  <div class="flex justify-between items-center mb-4">
-    <BackButton name="Revenir en arrière" :onClick="goBack" />
+  <!-- Affichage d'un indicateur de chargement pendant la récupération des données -->
+  <div v-if="loading" class="flex-1 flex justify-center items-center">
+    <Loading />
   </div>
-
-  <FormSubmission
-    v-if="recipeData"
-    ref="formRef"
-    name="Modification de la recette"
-    size-percentage="60"
-    :validation-schema="schema"
-    :initial-values="recipeData"
-    :on-submit="handleSubmit"
-  >
-    <div class="flex justify-between w-full">
-      <Input 
-        label="Nom de la recette" 
-        name="name" 
-        type="text" 
-        :modelValue="recipeData.name"
-      />
-      <Input 
-        label="Description" 
-        name="description" 
-        type="textarea" 
-        :modelValue="recipeData.description"
-      />
+  <div v-else>
+    <!-- En-tête avec le bouton de retour -->
+    <div class="flex justify-between items-center mb-4">
+      <BackButton name="Revenir en arrière" :onClick="goBack" />
     </div>
 
-    <div class="flex justify-between w-full">
-      <Input 
-        label="Temps de préparation (min)" 
-        name="prepTime" 
-        type="number" 
-        :modelValue="recipeData.prepTime"
-      />
-      <Input 
-        label="Temps de cuisson (min)" 
-        name="cookTime" 
-        type="number" 
-        :modelValue="recipeData.cookTime"
-      />
-    </div>
-
-    <div class="flex justify-between w-full">
-      <Input
-        label="Difficulté"
-        name="difficulty"
-        type="select"
-        :options="difficultyOptions"
-        :modelValue="recipeData.difficulty"
-      />
-      <Input
-        label="Catégorie"
-        name="categoryId"
-        type="select"
-        :options="categoriesOptions"
-        :modelValue="recipeData.categoryId"
-      />
-    </div>
-
-    <div class="flex justify-between w-full">
-      <Input 
-        label="Ingrédients" 
-        name="ingredients" 
-        type="textarea" 
-        :modelValue="recipeData.ingredients"
-      />
-      <Input 
-        label="Instructions" 
-        name="instructions" 
-        type="textarea" 
-        :modelValue="recipeData.instructions"
-      />
-    </div>
-
-    <div class="flex flex-col items-center justify-center mb-[30px]">
-      <div
-        class="relative bg-white p-[20px] rounded-full w-[150px] h-[150px] flex justify-center items-center cursor-pointer"
-        @click="triggerFileInput"
-      >
-        <NuxtImg
-          v-if="!imagePreview"
-          src="imageIconAdd.png"
-          class="text-white w-[100px] h-[100px] relative"
+    <!-- Formulaire de modification de recette -->
+    <FormSubmission
+      v-if="recipeData"
+      ref="formRef"
+      name="Modification de la recette"
+      size-percentage="60"
+      :validation-schema="schema"
+      :initial-values="recipeData"
+      :on-submit="handleSubmit"
+      :inputPerRow="2"
+    >
+      <!-- Champs pour le nom et la description de la recette -->
+      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
+        <Input 
+          label="Nom de la recette" 
+          name="name" 
+          type="text" 
+          :modelValue="recipeData.name"
         />
-        <NuxtImg
-          v-else
-          :src="imagePreview"
-          class="w-[100px] h-[100px] rounded-lg object-fit"
+        <Input 
+          label="Description" 
+          name="description" 
+          type="textarea" 
+          :modelValue="recipeData.description"
         />
-        <input
-          ref="fileInput"
-          type="file"
-          class="hidden"
-          name="image"
-          accept="image/*"
-          @change="handleImageUpload"
-        />
+      </div>
 
+      <!-- Champs pour les temps de préparation et de cuisson -->
+      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
+        <Input 
+          label="Temps de préparation (min)" 
+          name="prepTime" 
+          type="number" 
+          :modelValue="recipeData.prepTime"
+        />
+        <Input 
+          label="Temps de cuisson (min)" 
+          name="cookTime" 
+          type="number" 
+          :modelValue="recipeData.cookTime"
+        />
+      </div>
+
+      <!-- Champs pour la difficulté et la catégorie -->
+      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
+        <Input
+          label="Difficulté"
+          name="difficulty"
+          type="select"
+          :options="difficultyOptions"
+          :modelValue="recipeData.difficulty"
+        />
+        <Input
+          label="Catégorie"
+          name="categoryId"
+          type="select"
+          :options="categoriesOptions"
+          :modelValue="recipeData.categoryId"
+        />
+      </div>
+
+      <!-- Champs pour les ingrédients et les instructions -->
+      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
+        <Input 
+          label="Ingrédients" 
+          name="ingredients" 
+          type="textarea" 
+          :modelValue="recipeData.ingredients"
+        />
+        <Input 
+          label="Instructions" 
+          name="instructions" 
+          type="textarea" 
+          :modelValue="recipeData.instructions"
+        />
+      </div>
+
+      <!-- Section pour l'upload d'image -->
+      <div class="flex flex-col items-center justify-center mb-[30px]">
         <div
-          v-if="imagePreview"
-          @click.stop="clearImage()"
-          class="bg-red-500 absolute top-0 right-0 flex items-center justify-center rounded-full p-[5px]"
+          class="relative bg-white p-[20px] rounded-full w-[150px] h-[150px] flex justify-center items-center cursor-pointer"
+          @click="triggerFileInput"
         >
-          <Icon name="fa6-solid:trash" class="text-white w-6 h-6" />
+          <NuxtImg
+            v-if="!imagePreview"
+            src="imageIconAdd.png"
+            class="text-white w-[100px] h-[100px] relative"
+          />
+          <NuxtImg
+            v-else
+            :src="imagePreview"
+            class="w-[100px] h-[100px] rounded-lg object-fit"
+          />
+          <input
+            ref="fileInput"
+            type="file"
+            class="hidden"
+            name="image"
+            accept="image/*"
+            @change="handleImageUpload"
+          />
+
+          <div
+            v-if="imagePreview"
+            @click.stop="clearImage()"
+            class="bg-red-500 absolute top-0 right-0 flex items-center justify-center rounded-full p-[5px]"
+          >
+            <Icon name="fa6-solid:trash" class="text-white w-6 h-6" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <ValidationButton text="Modifier" />
-  </FormSubmission>
+      <!-- Bouton de validation du formulaire -->
+      <ValidationButton text="Modifier" />
+    </FormSubmission>
+  </div>
 </template>

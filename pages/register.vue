@@ -7,9 +7,8 @@ import Input from "~/components/ReusableComponents/Input.vue";
 import ValidationButton from "~/components/ReusableComponents/ValidationButton.vue";
 import Loading from "~/components/ReusableComponents/Loading.vue";
 import { useAuthStore } from "~/stores/useAuthStore";
-import { storeToRefs } from "pinia";
-import { useLoadingStore } from "~/stores/useLoadingStore";
 
+// Définition des métadonnées de la page
 definePageMeta({
   layout: "auth-layout",
 });
@@ -17,9 +16,9 @@ definePageMeta({
 const router = useRouter();
 const errorMessage = ref("");
 const authStore = useAuthStore();
-const loadingStore = useLoadingStore();
-const { isLoading } = storeToRefs(loadingStore);
+const loading = ref(false);
 
+// Définition du schéma de validation
 const schema = object({
   firstName: string().required("Le prénom est requis"),
   lastName: string().required("Le nom est requis"),
@@ -31,9 +30,10 @@ const schema = object({
     .min(6, "Minimum 6 caractères"),
 });
 
+// Fonction de soumission du formulaire
 const handleSubmit = async (values: object) => {
+  loading.value = true; // Démarrer le loading
   try {
-    loadingStore.startLoading();
     const response = await fetch("http://localhost:3001/auth/register", {
       method: "POST",
       headers: {
@@ -65,15 +65,27 @@ const handleSubmit = async (values: object) => {
     console.error("Erreur d'inscription:", error);
     errorMessage.value = "Une erreur est survenue lors de l'inscription";
   } finally {
-    loadingStore.stopLoading();
+    loading.value = false; // Arrêter le loading
   }
 };
+
+useSeoMeta({
+  title: "Inscription - RecetteApp",
+  description: "Créez votre compte sur RecetteApp et commencez à partager vos recettes.",
+  ogTitle: "Inscription - RecetteApp",
+  ogDescription: "Créez votre compte sur RecetteApp et commencez à partager vos recettes.",
+  ogImage: "/hyarotech.png",
+  ogUrl: "https://recettes.com/register",
+  twitterTitle: "Inscription - RecetteApp",
+  twitterDescription: "Créez votre compte sur RecetteApp et commencez à partager vos recettes.",
+  twitterImage: "/hyarotech.png",
+  twitterCard: "summary",
+});
 </script>
 
 <template>
-  <div v-if="isLoading">
-    <Loading />
-  </div>
+  <Loading v-if="loading" />
+  <!-- Utilisation de loading normal -->
   <FormSubmission
     v-else
     name="Inscription"
@@ -99,9 +111,9 @@ const handleSubmit = async (values: object) => {
       errorMessage
     }}</span>
     <div class="text-center mt-4 text-white">
-      Déjà un compte ? 
-      <NuxtLink 
-        to="/login" 
+      Déjà un compte ?
+      <NuxtLink
+        to="/login"
         class="text-tertiary hover:text-tertiary/80 font-semibold ml-1"
       >
         Connectez-vous

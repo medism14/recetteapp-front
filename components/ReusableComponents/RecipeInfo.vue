@@ -86,12 +86,12 @@ onMounted(() => {
 
 <template>
   <div
-    class="flex flex-col bg-white shadow-xl h-[350px] rounded-lg p-[10px] gap-[5px] hover:shadow-2xl transition-all duration-300 relative cursor-pointer"
+    class="flex flex-col bg-white shadow-xl h-[400px] rounded-lg p-[10px] gap-[5px] hover:shadow-2xl transition-all duration-300 relative cursor-pointer border border-gray-200"
     @click="handleNavigateShow(recipe?.id)"
   >
     <!-- Icône star pour les favoris -->
     <div
-      class="absolute top-[15px] right-[15px] cursor-pointer z-50 select-none"
+      class="absolute top-[15px] right-[15px] cursor-pointer z-30 select-none"
       @click.stop
       @click="toggleFavorite(recipe?.id)"
     >

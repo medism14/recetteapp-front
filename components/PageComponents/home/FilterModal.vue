@@ -1,14 +1,17 @@
 <!-- @format -->
 
 <script setup lang="ts">
+// Importation du type Difficulty pour les recettes et définition de l'interface Props pour les propriétés du composant.
 import type { Difficulty } from '~/types/recipe';
 
 interface Props {
   showFilterModal: boolean;
 }
 
+// Définition des propriétés du composant.
 defineProps<Props>();
 
+// Définition des émissions du composant pour communiquer avec le parent.
 const emit = defineEmits<{
   closeFilterModal: [];
   applyFilters: [filters: {
@@ -16,9 +19,12 @@ const emit = defineEmits<{
     categoryId?: number;
     ingredients?: string;
     sortBy?: 'createdAt' | 'name' | 'prepTime' | 'cookTime';
+    type ?: string;
   }];
+  removeFilters: [],
 }>();
 
+// Options de tri disponibles.
 const sortByOptions = [
   { value: 'createdAt', label: 'Date de création' },
   { value: 'name', label: 'Nom' },
@@ -26,18 +32,21 @@ const sortByOptions = [
   { value: 'cookTime', label: 'Temps de cuisson' },
 ];
 
+// Options de difficulté disponibles.
 const difficultyOptions = [
   { value: 'EASY', label: 'Facile' },
   { value: 'MEDIUM', label: 'Moyen' },
   { value: 'HARD', label: 'Difficile' },
 ];
 
+// Références réactives pour stocker les données.
 const categories = ref<{ id: number; name: string; }[]>([]);
 const selectedCategory = ref<any>();
 const selectedDifficulty = ref<any>('all');
 const ingredients = ref<string>('');
 const selectedSortBy = ref<string>(sortByOptions[0].value);
 
+// Fonction asynchrone pour récupérer les catégories.
 const getCategories = async () => {
   try {
     const response = await fetch('http://localhost:3001/categories', {
@@ -50,33 +59,41 @@ const getCategories = async () => {
   }
 };
 
+// Fonction pour fermer le modal.
 const closeModal = () => {
   emit('closeFilterModal');
 };
 
+// Fonction pour appliquer les filtres.
 const applyFilters = () => {
   emit('applyFilters', {
     difficulty: selectedDifficulty.value,
     categoryId: selectedCategory.value,
     ingredients: ingredients.value,
     sortBy: selectedSortBy.value as 'createdAt' | 'name' | 'prepTime' | 'cookTime',
+    type: "apply",
   });
   closeModal();
 };
 
+// Fonction pour réinitialiser les filtres.
 const resetFilters = () => {
   selectedCategory.value = 'all';
   selectedDifficulty.value = 'all';
   ingredients.value = '';
   selectedSortBy.value = sortByOptions[0].value;
+  emit('removeFilters');
+  closeModal();
 };
 
+// Initialisation des catégories lors du montage du composant.
 onMounted(() => {
   getCategories();
 });
 </script>
 
 <template>
+  <!-- Transition pour gérer l'animation d'entrée et de sortie du modal -->
   <Transition
     enter-active-class="transition-all duration-300"
     enter-from-class="opacity-0 translate-x-full"
@@ -85,24 +102,26 @@ onMounted(() => {
     leave-from-class="opacity-100 translate-x-0"
     leave-to-class="opacity-0 translate-x-full"
   >
+    <!-- Conteneur du modal -->
     <div v-if="showFilterModal" @click="closeModal" class="inset-0 fixed z-50">
+      <!-- Conteneur principal du modal -->
       <div
-        class="absolute top-0 right-0 w-[400px] bg-white h-full z-100 p-6 overflow-y-auto"
+        class="absolute top-0 right-0 w-full max-w-[400px] bg-white h-full z-100 p-4 overflow-y-auto"
         @click.stop
       >
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-2xl font-bold text-textColor">Filtres</h2>
+        <!-- En-tête du modal -->
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-textColor">Filtres</h2>
           <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
             <Icon name="mdi:close" class="text-2xl" />
           </button>
         </div>
 
-        <!-- Filtres -->
-        <div class="space-y-6">
-          <!-- Catégories -->
+        <!-- Section des filtres -->
+        <div class="space-y-4">
+          <!-- Sélection de la catégorie -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Catégorie
             </label>
             <select
@@ -120,9 +139,9 @@ onMounted(() => {
             </select>
           </div>
 
-          <!-- Difficulté -->
+          <!-- Sélection de la difficulté -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Niveau de difficulté
             </label>
             <select
@@ -140,9 +159,9 @@ onMounted(() => {
             </select>
           </div>
 
-          <!-- Ingrédients -->
+          <!-- Recherche par ingrédients -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Ingrédients
             </label>
             <input
@@ -153,9 +172,9 @@ onMounted(() => {
             />
           </div>
 
-          <!-- Tri -->
+          <!-- Sélection du tri -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
               Trier par
             </label>
             <select
@@ -173,9 +192,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Boutons -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 bg-white border-t">
-          <div class="flex gap-4">
+        <!-- Pied de page avec les boutons -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <div class="flex gap-2">
             <button
               @click="resetFilters"
               class="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"

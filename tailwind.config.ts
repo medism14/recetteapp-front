@@ -34,40 +34,40 @@ module.exports = {
     plugin(function ({ addComponents }: { addComponents: any }) {
       addComponents({
         ".containerInterne": {
-          padding: "20px",
+          padding: "8px",
           "@screen sm": {
-            padding: "20px 30px",
+            padding: "8px 16px",
           },
           "@screen md": {
-            padding: "20px 60px",
+            padding: "8px 24px",
           },
           "@screen lg": {
-            padding: "20px 100px",
+            padding: "8px 40px",
           },
           "@screen xl": {
-            padding: "20px 150px",
+            padding: "8px 70px",
           },
           "@screen 2xl": {
-            padding: "20px 180px",
+            padding: "8px 90px",
           },
         },
         ".containerExterne": {
-          padding: "20px",
-          margin: "0 10px",
+          padding: "8px",
+          margin: "0 2px",
           "@screen sm": {
-            margin: "0 20px",
+            margin: "0 4px",
           },
           "@screen md": {
-            margin: "0 60px",
+            margin: "0 16px",
           },
           "@screen lg": {
-            margin: "0 100px",
+            margin: "0 30px",
           },
           "@screen xl": {
-            margin: "0 150px",
+            margin: "0 50px",
           },
           "@screen 2xl": {
-            margin: "0 180px",
+            margin: "0 70px",
           },
         },
       });

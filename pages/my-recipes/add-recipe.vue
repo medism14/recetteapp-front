@@ -1,6 +1,7 @@
 <!-- @format -->
 
 <script setup lang="ts">
+// Importation des dépendances et des composants nécessaires
 import { object, string, number } from "yup";
 import BackButton from "~/components/ReusableComponents/BackButton.vue";
 import FormSubmission from "~/components/ReusableComponents/FormSubmission.vue";
@@ -8,11 +9,26 @@ import Input from "~/components/ReusableComponents/Input.vue";
 import ValidationButton from "~/components/ReusableComponents/ValidationButton.vue";
 import type { Category } from "~/types/category";
 
+// Configuration des métadonnées de la page
 definePageMeta({
   layout: "default",
   middleware: "auth",
 });
 
+useSeoMeta({
+  title: "Ajouter une Recette - RecetteApp",
+  description: "Créez et partagez une nouvelle recette de cuisine avec la communauté.",
+  ogTitle: "Ajouter une Recette - RecetteApp",
+  ogDescription: "Créez et partagez une nouvelle recette de cuisine avec la communauté.",
+  ogImage: "/hyarotech.png",
+  ogUrl: "https://recettes.com/my-recipes/add-recipe",
+  twitterTitle: "Ajouter une Recette - RecetteApp",
+  twitterDescription: "Créez et partagez une nouvelle recette de cuisine avec la communauté.",
+  twitterImage: "/hyarotech.png",
+  twitterCard: "summary",
+});
+
+// Initialisation des variables réactives
 const router = useRouter();
 const categoriesOptions = ref(null);
 const imagePreview = ref("");
@@ -20,6 +36,8 @@ const imageFile = ref<File | null>(null);
 const imageError = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
 
+// Définition du schéma de validation pour le formulaire d'ajout de recette
+// Utilise la bibliothèque Yup pour définir les règles de validation pour chaque champ
 const schema = object({
   name: string()
     .required("Le nom est requis")
@@ -55,6 +73,8 @@ const schema = object({
     .typeError("La catégorie doit être un nombre"),
 });
 
+// Fonction de gestion de la soumission du formulaire d'ajout de recette
+// Effectue la validation de l'image, la lecture de l'image et l'envoi des données au serveur
 const handleSubmit = async (values: object) => {
   if (!imageFile.value) {
     imageError.value = "Veuillez sélectionner une image";
@@ -92,10 +112,13 @@ const handleSubmit = async (values: object) => {
   };
 };
 
+// Fonction pour revenir à la page précédente
 const goBack = () => {
   router.back();
 };
 
+// Fonction de gestion du téléchargement de l'image
+// Met à jour les variables réactives imageFile et imagePreview lors de la sélection d'une image
 const handleImageUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
@@ -106,6 +129,8 @@ const handleImageUpload = (event: Event) => {
   if (imageError.value) imageError.value = "";
 };
 
+// Fonction pour effacer l'image sélectionnée
+// Réinitialise les variables réactives imagePreview, imageFile et vide l'input de fichier
 const clearImage = () => {
   imagePreview.value = "";
   imageFile.value = null;
@@ -114,12 +139,15 @@ const clearImage = () => {
   }
 };
 
+// Fonction de gestion du clic sur le bouton de soumission
+// Vérifie si une image a été sélectionnée et affiche une erreur si nécessaire
 const handleSubmitClicked = () => {
   if (!imageFile.value) {
     imageError.value = "Veuillez sélectionner une image";
   }
 };
 
+// Options pour le champ de sélection de la difficulté
 const difficultyOptions = [
   {
     label: "Facile",
@@ -135,6 +163,8 @@ const difficultyOptions = [
   },
 ];
 
+// Fonction pour récupérer les catégories depuis le serveur
+// Transforme les données reçues en un format adapté pour le champ de sélection des catégories
 const getCategories = async () => {
   const response = await fetch("http://localhost:3001/categories", {
     method: "GET",
@@ -157,38 +187,43 @@ const getCategories = async () => {
   categoriesOptions.value = categorieSerialized;
 };
 
+// Fonction pour déclencher l'ouverture de la boîte de dialogue de sélection de fichier
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
 
+// Appel de la fonction pour récupérer les catégories au chargement du composant
 getCategories();
 </script>
 
 <template>
-  <!-- Bouton arrière -->
+  <!-- Bouton de retour -->
   <div class="flex justify-between items-center mb-4">
     <BackButton name="Revenir en arrière" :onClick="goBack" />
   </div>
 
-  <!-- Titre -->
+  <!-- Formulaire d'ajout de recette -->
   <FormSubmission
     ref="formRef"
     name="Ajout de recette"
-    size-percentage="60"
+    :inputPerRow="2"
     :validation-schema="schema"
     :on-submit="handleSubmit"
   >
-    <div class="flex justify-between w-full">
+    <!-- Champs pour le nom et la description de la recette -->
+    <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
       <Input label="Nom de la recette" name="name" type="text" />
       <Input label="Description" name="description" type="textarea" />
     </div>
 
-    <div class="flex justify-between w-full">
+    <!-- Champs pour les temps de préparation et de cuisson -->
+    <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
       <Input label="Temps de préparation (min)" name="prepTime" type="number" />
       <Input label="Temps de cuisson (min)" name="cookTime" type="number" />
     </div>
 
-    <div class="flex justify-between w-full">
+    <!-- Champs pour la difficulté et la catégorie -->
+    <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
       <Input
         label="Difficulté"
         name="difficulty"
@@ -203,11 +238,13 @@ getCategories();
       />
     </div>
 
-    <div class="flex justify-between w-full">
+    <!-- Champs pour les ingrédients et les instructions -->
+    <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
       <Input label="Ingrédients" name="ingredients" type="textarea" />
       <Input label="Instructions" name="instructions" type="textarea" />
     </div>
 
+    <!-- Section pour l'upload d'image -->
     <div class="flex flex-col items-center justify-center mb-[30px]">
       <div
         class="relative bg-white p-[20px] rounded-full w-[150px] h-[150px] flex justify-center items-center cursor-pointer"
@@ -246,6 +283,7 @@ getCategories();
       </div>
     </div>
 
+    <!-- Bouton de validation du formulaire -->
     <ValidationButton text="Enregistrer" />
   </FormSubmission>
 </template>
