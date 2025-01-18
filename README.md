@@ -1,75 +1,52 @@
-# Nuxt Minimal Starter
+## Prérequis
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+- Node.js (version recommandée)
+- NPM
+- Backend lancé sur le port 3001
 
-## Setup
-
-Make sure to install dependencies:
+## Installation des dépendances:
+### Assurez-vous tout d'abord d'installer les dépendances nécessaires
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+## Serveur de développement
 
-Start the development server on `http://localhost:3000`:
+### Pour lancer le serveur en localhost `http://localhost:3000`:
 
 ```bash
 # npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+## Build de l'application
 
-Build the application for production:
+### Pour construire l'application, exécutez la commande ci-dessous:
 
 ```bash
-# npm
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
 ```
 
-Locally preview production build:
+## Structure de l'application
 
-```bash
-# npm
-npm run preview
+### Pages publiques
+* Connexion ("/login")
+* Inscription ("/register")
 
-# pnpm
-pnpm preview
 
-# yarn
-yarn preview
+### Pages authentifiées
+* Accueil ("/")
+* Gestion des recettes
+  * Liste des recettes ("/my-recipes")
+  * Ajout de recette ("/my-recipes/add-recipe")
+  * Édition de recette ("/my-recipes/edit-recipe/:id")
+  * Détails de la recette ("/recipe-detail/:id")
+* Recherche ("/search")
 
-# bun
-bun run preview
-```
+<br />
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Informations à connaître à propos de l'application
+
+* Assurez-vous de lancer le backend sur le port `3001`, si vous changez de port n'oubliez pas de le changer dans le fichier `.env`.
+* L'application est sécurisée avec un cookie HttpOnly qui vous sera retourné par le backend.

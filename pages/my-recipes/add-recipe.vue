@@ -8,6 +8,7 @@ import FormSubmission from "~/components/ReusableComponents/FormSubmission.vue";
 import Input from "~/components/ReusableComponents/Input.vue";
 import ValidationButton from "~/components/ReusableComponents/ValidationButton.vue";
 import type { Category } from "~/types/category";
+import DangerModal from "~/components/ReusableComponents/DangerModal.vue";
 
 // Configuration des métadonnées de la page
 definePageMeta({
@@ -35,6 +36,10 @@ const imagePreview = ref("");
 const imageFile = ref<File | null>(null);
 const imageError = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
+
+// Ajout des refs pour la gestion des erreurs
+const showDangerModal = ref<boolean>(false);
+const errorGlobal = ref<string>("");
 
 // Définition du schéma de validation pour le formulaire d'ajout de recette
 // Utilise la bibliothèque Yup pour définir les règles de validation pour chaque champ
@@ -106,8 +111,13 @@ const handleSubmit = async (values: object) => {
       }
 
       router.push("/my-recipes");
-    } catch (error) {
-      console.error("Erreur:", error);
+    } catch (error: any) {
+      errorGlobal.value = error.message || "Erreur lors de l'ajout de la recette";
+      showDangerModal.value = true;
+      setTimeout(() => {
+        showDangerModal.value = false;
+        errorGlobal.value = "";
+      }, 3000);
     }
   };
 };
@@ -166,25 +176,35 @@ const difficultyOptions = [
 // Fonction pour récupérer les catégories depuis le serveur
 // Transforme les données reçues en un format adapté pour le champ de sélection des catégories
 const getCategories = async () => {
-  const response = await fetch("http://localhost:3001/categories", {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
+  try {
+    const response = await fetch("http://localhost:3001/categories", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
 
-  const data = await response.json();
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des catégories");
+    }
 
-  const categorieSerialized = data.map((category: Category) => {
-    return {
+    const data = await response.json();
+    const categorieSerialized = data.map((category: Category) => ({
       label: category.name,
       value: category.id,
-    };
-  });
+    }));
 
-  categoriesOptions.value = categorieSerialized;
+    categoriesOptions.value = categorieSerialized;
+  } catch (error) {
+    errorGlobal.value = "Erreur lors de la récupération des catégories";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
+  }
 };
 
 // Fonction pour déclencher l'ouverture de la boîte de dialogue de sélection de fichier
@@ -286,4 +306,7 @@ getCategories();
     <!-- Bouton de validation du formulaire -->
     <ValidationButton text="Enregistrer" />
   </FormSubmission>
+
+  <!-- Ajout du DangerModal à la fin du template -->
+  <DangerModal :modalDangerShow="showDangerModal" :content="errorGlobal" />
 </template>

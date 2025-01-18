@@ -4,6 +4,8 @@ import { ref, onMounted, watch } from "vue";
 import type { Recipe } from "~/types/recipe";
 import BackButton from "~/components/ReusableComponents/BackButton.vue";
 import Loading from "~/components/ReusableComponents/Loading.vue";
+import { createError } from "nuxt/app";
+import DangerModal from "~/components/ReusableComponents/DangerModal.vue";
 
 // Définition des métadonnées de la page
 definePageMeta({
@@ -18,6 +20,9 @@ const recipe = ref<Recipe | null>(null);
 const difficulty = ref("");
 const isFavorite = ref(false);
 const loading = ref(true);
+const error = ref(false);
+const showDangerModal = ref<boolean>(false);
+const errorGlobal = ref<string>("");
 
 // Fonction pour revenir à la page précédente
 const goBack = () => {
@@ -27,7 +32,7 @@ const goBack = () => {
 // Fonction pour basculer l'état des favoris d'une recette
 const toggleFavorite = async (recipeId: number) => {
   const url = `http://localhost:3001/favorites/${recipeId}`;
-  const method = isFavorite.value ? "DELETE" : "POST"; // Choix du verbe HTTP basé sur l'état actuel
+  const method = isFavorite.value ? "DELETE" : "POST";
   try {
     const response = await fetch(url, {
       method: method,
@@ -37,9 +42,18 @@ const toggleFavorite = async (recipeId: number) => {
       },
     });
 
-    isFavorite.value = !isFavorite.value; // Mise à jour de l'état des favoris
+    if (!response.ok) {
+      throw new Error("Erreur lors de la modification des favoris");
+    }
+
+    isFavorite.value = !isFavorite.value;
   } catch (error) {
-    console.error(error); // Gestion des erreurs
+    errorGlobal.value = "Erreur lors de la modification des favoris";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
   }
 };
 
@@ -56,11 +70,19 @@ const isRecipeFavorite = async (recipeId: number) => {
         },
       }
     );
+    if (!response.ok) {
+      throw new Error("Erreur lors de la vérification des favoris");
+    }
     const data = await response.json();
-    isFavorite.value = data.isFavorite; // Mise à jour de l'état des favoris
+    isFavorite.value = data.isFavorite;
   } catch (error) {
-    console.error("Erreur lors de la vérification des favoris:", error);
-    return false; // Retourne false en cas d'erreur
+    errorGlobal.value = "Erreur lors de la vérification des favoris";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
+    return false;
   }
 };
 
@@ -80,14 +102,32 @@ onMounted(async () => {
     );
 
     if (!response.ok) {
+      if (response.status === 404) {
+        error.value = true;
+        throw createError({
+          statusCode: 404,
+          statusMessage: "Cette recette n'existe pas",
+          fatal: true
+        });
+      }
       throw new Error("Erreur lors de la récupération de la recette");
     }
 
     const recipeData = await response.json();
-    recipe.value = recipeData; // Stockage des données de la recette
+    
+    if (!recipeData) {
+      error.value = true;
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Cette recette n'existe pas",
+        fatal: true
+      });
+    }
+
+    recipe.value = recipeData;
 
     if (recipe.value && recipe.value.id) {
-      await isRecipeFavorite(recipe.value.id); // Vérification des favoris
+      await isRecipeFavorite(recipe.value.id);
 
       // Mapping des niveaux de difficulté
       switch (recipe.value.difficulty) {
@@ -101,13 +141,21 @@ onMounted(async () => {
           difficulty.value = "Difficile";
           break;
         default:
-          difficulty.value = "Inconnue"; // Gestion des cas non prévus
+          difficulty.value = "Inconnue";
       }
     }
-  } catch (error) {
-    console.error("Erreur:", error); // Gestion des erreurs
+  } catch (error: any) {
+    console.error("Erreur:", error);
+    if (error.statusCode === 404) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Cette recette n'existe pas",
+        fatal: true
+      });
+    }
+    throw error;
   } finally {
-    loading.value = false; // Fin du chargement
+    loading.value = false;
   }
 });
 
@@ -144,7 +192,7 @@ watch(() => recipe.value, (newRecipe) => {
   <div v-if="loading" class="flex-1 flex justify-center items-center">
     <Loading />
   </div>
-  <div v-else>
+  <div v-else-if="!error && recipe">
     <BackButton name="Revenir en arrière" :onClick="goBack" />
     <div class="bg-gray-50 mt-2">
       <!-- Section héro avec l'image -->
@@ -273,4 +321,5 @@ watch(() => recipe.value, (newRecipe) => {
       </div>
     </div>
   </div>
+  <DangerModal :modalDangerShow="showDangerModal" :content="errorGlobal" />
 </template>

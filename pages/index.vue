@@ -6,6 +6,7 @@ import FilterModal from "~/components/PageComponents/home/FilterModal.vue";
 import RecipeInfo from "~/components/ReusableComponents/RecipeInfo.vue";
 import SuccessModal from "~/components/ReusableComponents/SuccessModal.vue";
 import Loading from "~/components/ReusableComponents/Loading.vue";
+import DangerModal from "~/components/ReusableComponents/DangerModal.vue";
 import type { Recipe } from "~/types/recipe";
 
 definePageMeta({
@@ -19,6 +20,8 @@ const showFilterModal = ref<boolean>(false);
 const modalSuccessShow = ref<boolean>(false);
 const modalSuccessShowContent = ref<string>("");
 const loading = ref<boolean>(true);
+const showDangerModal = ref<boolean>(false);
+const errorGlobal = ref<string>("");
 
 const manageBodyOverflow = (isOpen: boolean) => {
   document.body.style.overflow = isOpen ? "hidden" : "auto";
@@ -92,10 +95,19 @@ const getRecipes = async (filter?: any) => {
       credentials: "include",
     });
 
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des recettes");
+    }
+
     const data = await response.json();
     recipes.value = data;
   } catch (error) {
-    console.error("Erreur lors de la récupération des recettes:", error);
+    errorGlobal.value = "Erreur lors de la récupération des recettes";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
   } finally {
     loading.value = false;
   }
@@ -110,15 +122,21 @@ const getFavorites = async () => {
       },
       credentials: "include",
     });
+
+    if (!response.ok) {
+      throw new Error("Erreur lors de la récupération des favoris");
+    }
+
     const data = await response.json();
-
-    const favoriteSerialized = data.map((favorite: any) => {
-      return favorite.recipe;
-    });
-
+    const favoriteSerialized = data.map((favorite: any) => favorite.recipe);
     favorites.value = favoriteSerialized;
   } catch (error) {
-    console.error("Erreur lors de la récupération des favoris:", error);
+    errorGlobal.value = "Erreur lors de la récupération des favoris";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
   }
 };
 
@@ -132,7 +150,12 @@ onMounted(async () => {
   try {
     await Promise.all([getRecipes(), getFavorites()]);
   } catch (error) {
-    console.error("Erreur lors du chargement initial:", error);
+    errorGlobal.value = "Erreur lors du chargement initial";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
   } finally {
     loading.value = false;
   }
@@ -228,4 +251,6 @@ useSeoMeta({
     :modalSuccessShow="modalSuccessShow"
     :content="modalSuccessShowContent"
   />
+
+  <DangerModal :modalDangerShow="showDangerModal" :content="errorGlobal" />
 </template>

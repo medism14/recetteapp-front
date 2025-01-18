@@ -22,12 +22,6 @@ export default defineNuxtConfig({
     preload: true,
   },
 
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.API_BASE_URL,
-    },
-  },
-
   typescript: {
     strict: true,
   },

@@ -10,6 +10,9 @@ import ValidationButton from "~/components/ReusableComponents/ValidationButton.v
 import type { Category } from "~/types/category";
 import type { Recipe } from "~/types/recipe";
 import Loading from "~/components/ReusableComponents/Loading.vue";
+import { createError } from "nuxt/app";
+import { useAuthStore } from "~/stores/useAuthStore";
+import DangerModal from "~/components/ReusableComponents/DangerModal.vue";
 
 // Configuration des métadonnées de la page
 definePageMeta({
@@ -18,6 +21,7 @@ definePageMeta({
 });
 
 // Initialisation des variables réactives
+const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 const recipeId = route.params.id;
@@ -28,7 +32,11 @@ const imageError = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
 const recipeData = ref<Recipe | null>(null);
 const loading = ref(true);
+const error = ref(false);
+const errorType = ref<number>(0);
 const recipe = ref<Recipe | null>(null);
+const errorGlobal = ref("");
+const showDangerModal = ref<boolean>(false);
 
 // Définition du schéma de validation pour le formulaire de modification de recette
 // Utilise la bibliothèque Yup pour définir les règles de validation pour chaque champ
@@ -96,10 +104,22 @@ const handleSubmit = async (values: object) => {
     if (response.ok) {
       router.push("/my-recipes");
     } else {
-      console.error("Erreur lors de la modification de la recette");
+      errorGlobal.value = "Erreur lors de la modification de la recette";
+      showDangerModal.value = true;
+
+      setTimeout(() => {
+        errorGlobal.value = "";
+        showDangerModal.value = false;
+      }, 3000);
     }
   } catch (error) {
-    console.error("Erreur:", error);
+    errorGlobal.value = "Erreur lors de la modification de la recette";
+    showDangerModal.value = true;
+
+    setTimeout(() => {
+      errorGlobal.value = "";
+      showDangerModal.value = false;
+    }, 3000);
   }
 };
 
@@ -115,26 +135,47 @@ const getRecipe = async () => {
       credentials: "include",
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      recipeData.value = {
-        id: Number(data.id),
-        name: data.name,
-        description: data.description,
-        prepTime: Number(data.prepTime),
-        cookTime: Number(data.cookTime),
-        difficulty: data.difficulty,
-        ingredients: data.ingredients,
-        instructions: data.instructions,
-        image: data.image,
-        categoryId: Number(data.categoryId),
-        userId: Number(data.userId),
-      };
-      imagePreview.value = data.image;
+    if (!response.ok) {
+      if (response.status === 404) {
+        error.value = true;
+        errorType.value = 404;
+      }
+      throw new Error("Erreur lors de la récupération de la recette");
     }
+
+    const data = await response.json();
+
+    if (!data) {
+      error.value = true;
+      errorType.value = 404;
+      throw new Error("Erreur lors de la récupération de la recette");
+    }
+
+    // Vérification de l'autorisation
+    if (data.userId !== authStore.id) {
+      error.value = true;
+      errorType.value = 403;
+      throw new Error(
+        "Vous n'avez pas l'autorisation de modifier cette recette"
+      );
+    }
+
+    recipeData.value = {
+      id: Number(data.id),
+      name: data.name,
+      description: data.description,
+      prepTime: Number(data.prepTime),
+      cookTime: Number(data.cookTime),
+      difficulty: data.difficulty,
+      ingredients: data.ingredients,
+      instructions: data.instructions,
+      image: data.image,
+      categoryId: Number(data.categoryId),
+      userId: Number(data.userId),
+    };
+    imagePreview.value = data.image;
   } catch (error) {
-    console.error("Erreur lors de la récupération de la recette:", error);
-    router.push("/my-recipes");
+    throw error;
   } finally {
     loading.value = false;
   }
@@ -203,28 +244,51 @@ onMounted(async () => {
   try {
     await Promise.all([getCategories(), getRecipe()]);
   } catch (error) {
-    console.error("Erreur lors du chargement initial:", error);
     loading.value = false;
+    if (errorType.value == 403) {
+      throw createError({
+        statusCode: 403,
+        message: "Vous n'avez pas l'autorisation de modifier cette recette",
+        fatal: true,
+      });
+    } else if (errorType.value == 404) {
+      throw createError({
+        statusCode: 404,
+        message: "Cette recette n'existe pas",
+        fatal: true,
+      });
+    } else {
+      throw createError({
+        statusCode: 400,
+        message:
+          "Impossible d'accéder à cette page, veuillez revenir en arrière",
+        fatal: true,
+      });
+    }
   }
 });
 
 // Ajouter dans le watch de recipe.value ou dans onMounted après le chargement des données
-watch(() => recipe.value, (newRecipe) => {
-  if (newRecipe) {
-    useSeoMeta({
-      title: `Modifier ${newRecipe.name} - RecetteApp`,
-      description: `Modifiez votre recette: ${newRecipe.description}`,
-      ogTitle: `Modifier ${newRecipe.name} - RecetteApp`,
-      ogDescription: newRecipe.description,
-      ogImage: newRecipe.image,
-      ogUrl: `https://recettes.com/my-recipes/edit-recipe/${newRecipe.id}`,
-      twitterTitle: `Modifier ${newRecipe.name} - RecetteApp`,
-      twitterDescription: newRecipe.description,
-      twitterImage: newRecipe.image,
-      twitterCard: "summary",
-    });
-  }
-}, { immediate: true });
+watch(
+  () => recipe.value,
+  (newRecipe) => {
+    if (newRecipe) {
+      useSeoMeta({
+        title: `Modifier ${newRecipe.name} - RecetteApp`,
+        description: `Modifiez votre recette: ${newRecipe.description}`,
+        ogTitle: `Modifier ${newRecipe.name} - RecetteApp`,
+        ogDescription: newRecipe.description,
+        ogImage: newRecipe.image,
+        ogUrl: `https://recettes.com/my-recipes/edit-recipe/${newRecipe.id}`,
+        twitterTitle: `Modifier ${newRecipe.name} - RecetteApp`,
+        twitterDescription: newRecipe.description,
+        twitterImage: newRecipe.image,
+        twitterCard: "summary",
+      });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -232,7 +296,7 @@ watch(() => recipe.value, (newRecipe) => {
   <div v-if="loading" class="flex-1 flex justify-center items-center">
     <Loading />
   </div>
-  <div v-else>
+  <div v-else-if="!error && recipeData">
     <!-- En-tête avec le bouton de retour -->
     <div class="flex justify-between items-center mb-4">
       <BackButton name="Revenir en arrière" :onClick="goBack" />
@@ -240,7 +304,6 @@ watch(() => recipe.value, (newRecipe) => {
 
     <!-- Formulaire de modification de recette -->
     <FormSubmission
-      v-if="recipeData"
       ref="formRef"
       name="Modification de la recette"
       size-percentage="60"
@@ -250,39 +313,45 @@ watch(() => recipe.value, (newRecipe) => {
       :inputPerRow="2"
     >
       <!-- Champs pour le nom et la description de la recette -->
-      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
-        <Input 
-          label="Nom de la recette" 
-          name="name" 
-          type="text" 
+      <div
+        class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]"
+      >
+        <Input
+          label="Nom de la recette"
+          name="name"
+          type="text"
           :modelValue="recipeData.name"
         />
-        <Input 
-          label="Description" 
-          name="description" 
-          type="textarea" 
+        <Input
+          label="Description"
+          name="description"
+          type="textarea"
           :modelValue="recipeData.description"
         />
       </div>
 
       <!-- Champs pour les temps de préparation et de cuisson -->
-      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
-        <Input 
-          label="Temps de préparation (min)" 
-          name="prepTime" 
-          type="number" 
+      <div
+        class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]"
+      >
+        <Input
+          label="Temps de préparation (min)"
+          name="prepTime"
+          type="number"
           :modelValue="recipeData.prepTime"
         />
-        <Input 
-          label="Temps de cuisson (min)" 
-          name="cookTime" 
-          type="number" 
+        <Input
+          label="Temps de cuisson (min)"
+          name="cookTime"
+          type="number"
           :modelValue="recipeData.cookTime"
         />
       </div>
 
       <!-- Champs pour la difficulté et la catégorie -->
-      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
+      <div
+        class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]"
+      >
         <Input
           label="Difficulté"
           name="difficulty"
@@ -300,17 +369,19 @@ watch(() => recipe.value, (newRecipe) => {
       </div>
 
       <!-- Champs pour les ingrédients et les instructions -->
-      <div class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]">
-        <Input 
-          label="Ingrédients" 
-          name="ingredients" 
-          type="textarea" 
+      <div
+        class="flex flex-col md:flex-row justify-between w-full gap-[8px] md:gap-[15px]"
+      >
+        <Input
+          label="Ingrédients"
+          name="ingredients"
+          type="textarea"
           :modelValue="recipeData.ingredients"
         />
-        <Input 
-          label="Instructions" 
-          name="instructions" 
-          type="textarea" 
+        <Input
+          label="Instructions"
+          name="instructions"
+          type="textarea"
           :modelValue="recipeData.instructions"
         />
       </div>
@@ -353,5 +424,7 @@ watch(() => recipe.value, (newRecipe) => {
       <!-- Bouton de validation du formulaire -->
       <ValidationButton text="Modifier" />
     </FormSubmission>
+
+    <DangerModal :modalDangerShow="showDangerModal" :content="errorGlobal" />
   </div>
 </template>

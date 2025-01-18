@@ -42,5 +42,6 @@ export const useAuthStore = defineStore("auth", {
     fullName: (state) =>
       state.user ? `${state.user.firstName} ${state.user.lastName}` : "",
     email: (state) => (state.user ? state.user.email : ""),
+    id: (state) => (state.user ? state.user.id : "")
   },
 });

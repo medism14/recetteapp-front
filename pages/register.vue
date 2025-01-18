@@ -47,7 +47,6 @@ const handleSubmit = async (values: object) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Erreur d'inscription", data);
       if (response.status === 400) {
         errorMessage.value =
           "Le mot de passe doit contenir au moins 6 caractères";
@@ -62,7 +61,6 @@ const handleSubmit = async (values: object) => {
     authStore.setUser(data);
     await router.push("/");
   } catch (error) {
-    console.error("Erreur d'inscription:", error);
     errorMessage.value = "Une erreur est survenue lors de l'inscription";
   } finally {
     loading.value = false; // Arrêter le loading

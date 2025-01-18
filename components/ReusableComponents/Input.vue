@@ -35,7 +35,7 @@ if (props.modelValue) {
 <template>
   <div class="flex flex-col mb-4 gap-[3px] w-full">
     <!-- Label -->
-    <label class="text-white font-bold">{{ label }}</label>
+    <label class="text-white font-bold text-[18px]">{{ label }}</label>
 
     <!-- Input -->
     <Field :name="name" v-slot="{ field, errorMessage }">
@@ -45,7 +45,7 @@ if (props.modelValue) {
           <textarea
             v-bind="field"
             :rows="rows || 4"
-            class="outline-none p-[8px] w-full rounded focus:ring-2 text-[14px] resize-none"
+            class="outline-none p-[12px] w-full rounded focus:ring-2 text-[16px] resize-none"
             :class="{ 'ring-2 ring-red-400': errorMessage }"
           />
         </template>
@@ -54,7 +54,7 @@ if (props.modelValue) {
         <template v-else-if="type === 'select'">
           <select
             v-bind="field"
-            class="outline-none px-[8px] h-[36px] w-full rounded focus:ring-2 text-[14px]"
+            class="outline-none px-[12px] h-[40px] w-full rounded focus:ring-2 text-[16px]"
             :class="{ 'ring-2 ring-red-400': errorMessage }"
           >
             <option
@@ -72,7 +72,7 @@ if (props.modelValue) {
           <input
             v-bind="field"
             type="number"
-            class="outline-none px-[8px] h-[36px] w-full rounded focus:ring-2 text-[14px]"
+            class="outline-none px-[12px] h-[40px] w-full rounded focus:ring-2 text-[16px]"
             :class="[
               errorMessage && 'ring-2 ring-red-400',
               secure && 'pr-[40px]',
@@ -85,7 +85,7 @@ if (props.modelValue) {
           <input
             v-bind="field"
             :type="secure ? (showPassword ? 'text' : 'password') : type"
-            class="outline-none px-[8px] h-[36px] w-full rounded focus:ring-2 text-[14px]"
+            class="outline-none px-[12px] h-[40px] w-full rounded focus:ring-2 text-[16px]"
             :class="[
               errorMessage && 'ring-2 ring-red-400',
               secure && 'pr-[40px]',
@@ -101,7 +101,7 @@ if (props.modelValue) {
           />
         </template>
       </div>
-      <span class="text-red-400 text-sm font-bold" v-if="errorMessage">{{
+      <span class="text-red-400 text-[14px] font-bold" v-if="errorMessage">{{
         errorMessage
       }}</span>
     </Field>

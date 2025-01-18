@@ -4,6 +4,7 @@
 import type { Recipe } from '~/types/recipe';
 import RecipeInfo from '~/components/ReusableComponents/RecipeInfo.vue';
 import Loading from '~/components/ReusableComponents/Loading.vue';
+import DangerModal from '~/components/ReusableComponents/DangerModal.vue';
 
 definePageMeta({
   middleware: "auth",
@@ -14,6 +15,8 @@ const searchText = ref(route.query.q as string || '');
 const recipes = ref<Recipe[]>([]);
 const loading = ref(false);
 const noResults = ref(false);
+const showDangerModal = ref<boolean>(false);
+const errorGlobal = ref<string>("");
 
 // Fonction pour effectuer la recherche de recettes
 const searchRecipes = async () => {
@@ -34,7 +37,12 @@ const searchRecipes = async () => {
     recipes.value = data;
     noResults.value = data.length === 0;
   } catch (error) {
-    console.error('Erreur:', error);
+    errorGlobal.value = "Une erreur est survenue lors de la recherche";
+    showDangerModal.value = true;
+    setTimeout(() => {
+      showDangerModal.value = false;
+      errorGlobal.value = "";
+    }, 3000);
   } finally {
     loading.value = false;
   }
@@ -126,4 +134,6 @@ watch([searchText, recipes], ([newSearchText, newRecipes]) => {
       />
     </div>
   </div>
+
+  <DangerModal :modalDangerShow="showDangerModal" :content="errorGlobal" />
 </template>
